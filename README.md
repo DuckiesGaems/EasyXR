@@ -92,7 +92,7 @@ public class EasyXRTeleporter : XRButton
         protected override void Start()
         {
             base.Start();
-       ThisGameobject = this.gameObject;
+       thisgameobject = this.gameObject;
         }
 
     public override void ButtonActivationWithHand(bool isLeftHand, bool isPressed)
