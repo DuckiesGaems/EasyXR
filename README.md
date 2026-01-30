@@ -80,11 +80,20 @@ public override void ButtonActivationWithHand(bool isLeftHand, bool isPressed)
  ```
 
 Teleporter example:
+> [!CAUTION]
+> When overriding Unity’s Start method, declare it as `protected override` and call `base.Start();` to ensure XRButton initializes correctly.
 
 ```csharp
 public class EasyXRTeleporter : XRButton
 {
     public Transform destination;
+    public GameObject thisgameobject;
+
+        protected override void Start()
+        {
+            base.Start();
+       ThisGameobject = this.gameObject;
+        }
 
     public override void ButtonActivationWithHand(bool isLeftHand, bool isPressed)
     {
