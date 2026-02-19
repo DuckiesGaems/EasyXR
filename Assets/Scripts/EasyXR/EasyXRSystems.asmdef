@@ -1,0 +1,20 @@
+{
+    "name": "EasyXRSystems",
+    "rootNamespace": "EasyXRSystems",
+    "references": [
+        "GUID:ac5c384907b3b6440b435e6cc6f38986",
+        "GUID:fe685ec1767f73d42b749ea8045bfe43",
+        "GUID:80ecb87cae9c44d19824e70ea7229748"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        ""
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

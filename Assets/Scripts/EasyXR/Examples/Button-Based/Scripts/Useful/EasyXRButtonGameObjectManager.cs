@@ -11,7 +11,7 @@ private GameObject ThisGameobject;
 public bool IsToggle;
 private bool ActiveState => GameModeActiveState == GameObjectManagerEnum.Enable;
 
-private bool ToggleState = false; // false = enabled, true = disabled
+public bool ToggleState = false; // false = enabled, true = disabled
 
     protected override void Start()
     {

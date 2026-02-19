@@ -1,51 +1,44 @@
 using UnityEngine;
+using UnityEngine.XR;
 using UnityEngine.XR.Interaction.Toolkit.Interactors;
-using easyInputs;
-
 
 namespace EasyXRSystems
 {
     public class XREasyGrab : MonoBehaviour
     {
-
-        [Header("Place onto your Left/Right Controller\n\nReferences")]
+        [Header("Place onto your Left/Right Controller")]
         public Rigidbody Player;
         public Transform HandTransform;
         public XRDirectInteractor HandInteractor;
 
         [Header("Input")]
-        public EasyHand TriggerHand = EasyHand.RightHand;
+        public XRNode xrHand = XRNode.RightHand; 
         public InteractionType Type = InteractionType.Trigger;
 
         [Header("Climbing")]
         public LayerMask ClimbLayer;
         public float GrabRange = 0.08f;
+
         [Header("Optional Settings")]
-        [Tooltip("If true, uses Non-Rigidbody Velocity and creates a more smoother result.")] public bool UseNonRBVel = true;
+        public bool UseNonRBVel = true;
 
         [Header("Events")]
         public UnityEngine.Events.UnityEvent OnGrab;
         public UnityEngine.Events.UnityEvent OnRelease;
 
+        private InputDevice device;
         private Transform grabPoint;
         private Collider grabbedCollider;
         private bool isGrabbing = false;
-        private Collider[] overlapBuffer = new Collider[10]; // or whatever max you expect
 
+        private Collider[] overlapBuffer = new Collider[10];
+        private Vector3 LastPosition;
+        private Vector3 Velocity;
 
         public enum InteractionType { Trigger, Grip }
 
-        private Vector3 Velocity;
-
-        private Vector3 LastPosition;
-
         private void Awake()
         {
-            if (UseNonRBVel)
-            {
-                LastPosition = transform.position;
-            }
-
             if (HandTransform == null)
                 HandTransform = transform;
 
@@ -54,14 +47,20 @@ namespace EasyXRSystems
 
             if (HandInteractor == null)
                 HandInteractor = GetComponent<XRDirectInteractor>();
+
+            AcquireDevice();
+            LastPosition = transform.position;
         }
 
         private void Update()
         {
+            if (!device.isValid)
+                AcquireDevice();
 
             if (IsHoldingInteractable())
             {
-                if (isGrabbing) EndGrab();
+                if (isGrabbing)
+                    EndGrab();
                 return;
             }
 
@@ -81,7 +80,10 @@ namespace EasyXRSystems
         {
             if (UseNonRBVel)
             {
-                Velocity = transform.hasChanged ? (transform.position - LastPosition) / Time.deltaTime : Vector3.zero;
+                Velocity = transform.hasChanged
+                    ? (transform.position - LastPosition) / Time.deltaTime
+                    : Vector3.zero;
+
                 LastPosition = transform.position;
                 transform.hasChanged = false;
             }
@@ -92,19 +94,31 @@ namespace EasyXRSystems
                 Player.linearVelocity = velocity;
             }
         }
+        private void AcquireDevice()
+        {
+            device = InputDevices.GetDeviceAtXRNode(xrHand);
+        }
 
         private bool IsInputPressed()
         {
-            return Type == InteractionType.Trigger
-                ? EasyInputs.GetTriggerButtonDown(TriggerHand)
-                : EasyInputs.GetGripButtonDown(TriggerHand);
-        }
+            if (!device.isValid)
+                return false;
 
+            if (Type == InteractionType.Trigger)
+            {
+                device.TryGetFeatureValue(CommonUsages.trigger, out float trigger);
+                return trigger > 0.75f;
+            }
+            else
+            {
+                device.TryGetFeatureValue(CommonUsages.grip, out float grip);
+                return grip > 0.75f;
+            }
+        }
         private bool IsHoldingInteractable()
         {
             return HandInteractor != null && HandInteractor.hasSelection;
         }
-
         private bool TryGetClosestClimbable(out Collider climbable)
         {
             int count = Physics.OverlapSphereNonAlloc(
@@ -133,7 +147,6 @@ namespace EasyXRSystems
             climbable = best;
             return climbable != null;
         }
-
         private void StartGrab(Collider climbable)
         {
             isGrabbing = true;
@@ -146,26 +159,25 @@ namespace EasyXRSystems
             grabPoint.position = HandTransform.position;
             grabPoint.rotation = HandTransform.rotation;
 
-            grabPoint.SetParent(climbable.transform, true);
-
             grabbedCollider.enabled = false;
 
             OnGrab?.Invoke();
-            Debug.Log($"Grab started with {TriggerHand} on {climbable.name}.");
         }
 
         private void EndGrab()
         {
             isGrabbing = false;
 
-            grabPoint.gameObject.SetActive(false);
+            if (grabPoint != null)
+                grabPoint.gameObject.SetActive(false);
+
+            if (grabbedCollider)
+                grabbedCollider.enabled = true;
+
+            grabbedCollider = null;
             grabPoint = null;
 
-            if (grabbedCollider) grabbedCollider.enabled = true;
-            grabbedCollider = null;
-
             OnRelease?.Invoke();
-            Debug.Log($"Grab ended with {TriggerHand}.");
         }
 
         private void OnDrawGizmosSelected()
